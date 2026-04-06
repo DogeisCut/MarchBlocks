@@ -14,7 +14,7 @@
     export interface EditorState {
         workspace: Blockly.WorkspaceSvg
         canvas: HTMLCanvasElement
-        editorModalKind?: "variable" | "projectSettings" | "editorSettings" | null,
+        editorModalKind?: string | null,
         save: {
             unsavedChanges: boolean,
             fileName: string | null
@@ -386,30 +386,39 @@
         />
     </div>
     <!-- i spent time on this variabel modal only to realise i wont need it :/ -->
-    {#if editorState.editorModalKind === "variable"}
-        <EditorModalVariable
-            title="Create a Variable"
-            acceptText="Create"
-            cancelText="Cancel"
-            {editorState}
-        ></EditorModalVariable>
-    {:else if editorState.editorModalKind === "editorSettings"}
-        <EditorModal
-            title="Editor Settings"
-            acceptText="Accept"
-            cancelText="Cancel"
-            onAccept={() => {}}
-            onCancel={() => {editorState.editorModalKind = null}}
-        ></EditorModal>
-    {:else if editorState.editorModalKind === "projectSettings"}
-        <EditorModal
-            title="Project Settings"
-            acceptText="Accept"
-            cancelText="Cancel"
-            onAccept={() => {}}
-            onCancel={() => {editorState.editorModalKind = null}}
-        ></EditorModal>
-    {/if}
+    <EditorModalVariable
+        {editorState}
+        id="variables"
+        title="Create a Variable"
+        acceptText="Create"
+        cancelText="Cancel"
+    ></EditorModalVariable>
+    <EditorModal
+        {editorState}
+        id="editorSettings"
+        title="Editor Settings"
+        acceptText="Accept"
+        cancelText="Cancel"
+        onAccept={function () { // rare moment where the difference between () => {} and function() {} actually shows up
+            this.close()
+        }}
+        onCancel={function () {
+            this.close()
+        }}
+    ></EditorModal>
+    <EditorModal
+        {editorState}
+        id="projectSettings"
+        title="Project Settings"
+        acceptText="Accept"
+        cancelText="Cancel"
+        onAccept={function () {
+            this.close()
+        }}
+        onCancel={function () {
+            this.close()
+        }}
+    ></EditorModal>
 </div>
 <AlphaWarning />
 

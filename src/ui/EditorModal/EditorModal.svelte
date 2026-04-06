@@ -1,8 +1,12 @@
 <script lang="ts">
     import type { Snippet } from "svelte";
 
+    import type { EditorState } from "../Editor.svelte"
+
     interface EditorModalProps {
+        editorState: EditorState;
         title: string;
+        id: string;
         acceptText?: string;
         cancelText?: string;
         onAccept?: () => void;
@@ -11,27 +15,39 @@
         children?: Snippet;
     }
 
+    const internalModal = {
+        close: function() {
+            props.editorState.editorModalKind = null
+        }
+    }
+
+    function close() {
+        props.editorState.editorModalKind = null
+    }
+
     const props: EditorModalProps = $props();
 </script>
 
-<div class="editor-modal">
-    <div class="editor-modal__content">
-        <div class="editor-modal__top_row">
-            <h2>{props.title}</h2>
-        </div>
-        {@render props?.children()}
-        <div class="editor-modal__bottom_row">
-            <div class="editor-modal__buttons">
-                {#if props.acceptText && props.onAccept}
-                    <button onclick={props.onAccept} disabled={props.acceptDisabled}>{props.acceptText}</button>
-                {/if}
-                {#if props.cancelText && props.onCancel}
-                    <button onclick={props.onCancel}>{props.cancelText}</button>
-                {/if}
+{#if props.editorState.editorModalKind === props.id}
+    <div class="editor-modal">
+        <div class="editor-modal__content">
+            <div class="editor-modal__top_row">
+                <h2>{props.title}</h2>
+            </div>
+            {@render props?.children()}
+            <div class="editor-modal__bottom_row">
+                <div class="editor-modal__buttons">
+                    {#if props.acceptText && props.onAccept}
+                        <button onclick={props.onAccept.bind(internalModal)} disabled={props.acceptDisabled}>{props.acceptText}</button>
+                    {/if}
+                    {#if props.cancelText && props.onCancel}
+                        <button onclick={props.onCancel.bind(internalModal)}>{props.cancelText}</button>
+                    {/if}
+                </div>
             </div>
         </div>
     </div>
-</div>
+{/if}
 
 <style>
     .editor-modal {

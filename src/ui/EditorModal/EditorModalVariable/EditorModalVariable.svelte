@@ -5,10 +5,11 @@
     import type { EditorState } from "../../Editor.svelte"
 
     interface EditorModalProps {
+        editorState: EditorState;
         title: string;
+        id: string;
         acceptText?: string;
         cancelText?: string;
-        editorState: EditorState;
         children?: Snippet;
     }
 
@@ -20,7 +21,9 @@
 </script>
 
 <EditorModal
+    editorState={props.editorState}
     title={props.title}
+    id={props.id}
     acceptText={props.acceptText}
     cancelText={props.cancelText}
     acceptDisabled={!canCreate}
