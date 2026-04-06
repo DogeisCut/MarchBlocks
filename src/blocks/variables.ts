@@ -5,6 +5,13 @@ import {FieldColourHsvSliders} from '@blockly/field-colour-hsv-sliders';
 
 import { BlockTypes, shadowMap, trueTypeMap } from "../shared"
 
+// TODO: fix set block value shadow in inspector
+// TODO: fix set block not updating when placed
+// TODO: fix invalid names (dont prevent them, but figure out how to convert them without conflicts!)
+// TODO: fix conflicting names
+// TODO: fix weird inspector stuff if you like drag out the block with the same name twice then delete one
+// TODO: fix init block position affecting where the var is declared.
+
 // Im aware of the variables field, but I dont want to use it here.
 function getVariables(workspace: Blockly.WorkspaceSvg): Blockly.MenuOption[] {
     const allVars = workspace.getVariableMap().getAllVariables();
@@ -389,18 +396,18 @@ BlocklyGLSL.gLSLGenerator.forBlock["variables_init"] = function (block: Varibale
     const NAME = block.getFieldValue("NAME");
     if (block.defaultValue_) {
         const VALUE = fieldMap[TYPE].get(block);
-        return `${typeMap[TYPE]} ${NAME} = ${VALUE};\n`;
+        return `${typeMap[TYPE]} marchBlocks_${NAME} = ${VALUE};\n`;
     }
-    return `${typeMap[TYPE]} ${NAME};\n`;
+    return `${typeMap[TYPE]} marchBlocks_${NAME};\n`;
 };
 
 BlocklyGLSL.gLSLGenerator.forBlock["variables_get"] = function (block: Blockly.BlockSvg, generator) {
     const VARIABLE = block.getFieldValue("VARIABLE");
-    return [`${block.workspace.getVariableMap().getVariableById(VARIABLE).getName()}`, BlocklyGLSL.Order.NONE];
+    return [`marchBlocks_${block.workspace.getVariableMap().getVariableById(VARIABLE).getName()}`, BlocklyGLSL.Order.NONE];
 };
 
 BlocklyGLSL.gLSLGenerator.forBlock["variables_set"] = function (block: Blockly.BlockSvg, generator) {
     const VARIABLE = block.getFieldValue("VARIABLE");
     const VALUE = generator.valueToCode(block, "VALUE", BlocklyGLSL.Order.ATOMIC)
-    return `${block.workspace.getVariableMap().getVariableById(VARIABLE).getName()} = ${VALUE};`
+    return `marchBlocks_${block.workspace.getVariableMap().getVariableById(VARIABLE).getName()} = ${VALUE};`
 };
