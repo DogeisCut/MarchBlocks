@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { onMount, onDestroy } from "svelte";
     import type { Snippet } from "svelte";
 
     import type { EditorState } from "../Editor.svelte"
@@ -17,18 +18,22 @@
 
     const internalModal = {
         close: function() {
-            props.editorState.editorModalKind = null
+            props.editorState.openEditorModals.delete(props.id) 
         }
     }
 
-    function close() {
-        props.editorState.editorModalKind = null
-    }
-
     const props: EditorModalProps = $props();
+
+    onMount(() => {
+        props.editorState.registeredEditorModals.add(props.id)
+        onDestroy(() => {
+            props.editorState.registeredEditorModals.delete(props.id)
+        });
+    })
+    
 </script>
 
-{#if props.editorState.editorModalKind === props.id}
+{#if props.editorState.openEditorModals.has(props.id)}
     <div class="editor-modal">
         <div class="editor-modal__content">
             <div class="editor-modal__top_row">

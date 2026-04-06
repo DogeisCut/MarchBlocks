@@ -6,12 +6,12 @@
 
     import * as Serializer from "../../serializer"
 
-    import type { ProjectSettings } from "../Editor.svelte"
-    import type { EditorState } from "../Editor.svelte"
+    import type { EditorState, EditorFunctions, ProjectSettings } from "../Editor.svelte"
 
     interface EditorTopBarProps {
         projectSettings: ProjectSettings,
         editorState: EditorState
+        editorFunctions: EditorFunctions
     }
 
     const props: EditorTopBarProps = $props()
@@ -56,10 +56,10 @@
 
         <EditorTopBarDropdown text="Settings">
             <EditorTopBarDropdownContentOption 
-                onclick={() => props.editorState.editorModalKind = "editorSettings"}
+                onclick={() => props.editorFunctions.openModal("editorSettings")}
             >Editor Settings</EditorTopBarDropdownContentOption>
             <EditorTopBarDropdownContentOption 
-                onclick={() => props.editorState.editorModalKind = "projectSettings"}
+                onclick={() => props.editorFunctions.openModal("projectSettings")}
             >Project Settings</EditorTopBarDropdownContentOption>
         </EditorTopBarDropdown>
 

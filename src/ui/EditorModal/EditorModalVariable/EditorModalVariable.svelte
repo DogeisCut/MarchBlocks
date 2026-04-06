@@ -27,11 +27,11 @@
     acceptText={props.acceptText}
     cancelText={props.cancelText}
     acceptDisabled={!canCreate}
-    onAccept={() => {
-        
+    onAccept={function () {
+        this.close()
     }}
-    onCancel={() => {
-        props.editorState.editorModalKind = null
+    onCancel={function () {
+        this.close()
     }}
 >
     <input type="text" placeholder="Variable Name" bind:value={variableName} />

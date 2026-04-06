@@ -12,13 +12,18 @@
     }
 
     export interface EditorState {
-        workspace: Blockly.WorkspaceSvg
-        canvas: HTMLCanvasElement
-        editorModalKind?: string | null,
+        workspace: Blockly.WorkspaceSvg;
+        canvas: HTMLCanvasElement;
+        registeredEditorModals: SvelteSet<string>;
+        openEditorModals: SvelteSet<string>;
         save: {
-            unsavedChanges: boolean,
-            fileName: string | null
-        } | null
+            unsavedChanges: boolean;
+            fileName: string | null;
+        } | null;
+    }
+
+    export interface EditorFunctions {
+        openModal: (id: string) => void;
     }
 </script>
 
@@ -34,8 +39,7 @@
     import EditorTopBar from "./EditorTopBar/EditorTopBar.svelte";
     import EditorModal from "./EditorModal/EditorModal.svelte";
     import EditorModalVariable from "./EditorModal/EditorModalVariable/EditorModalVariable.svelte";
-
-    import { BlockTypes } from "../shared"
+    import { SvelteSet } from "svelte/reactivity";
 
     import.meta.glob('../blocks/*.ts', { eager: true });
 
@@ -54,9 +58,19 @@
     let editorState: EditorState = $state({
         workspace: null,
         canvas: null,
-        editorModalKind: null,
+        registeredEditorModals: new SvelteSet(),
+        openEditorModals: new SvelteSet(),
         save: null
     })
+
+    const editorFunctions: EditorFunctions = {
+        openModal: function(id: string) {
+            editorState.openEditorModals.delete(id)
+            if (editorState.registeredEditorModals.has(id)) {
+                editorState.openEditorModals.add(id)
+            }
+        },
+    }
 
     registerContinuousToolbox();
     
@@ -161,7 +175,7 @@
             return xmlList;
         });
         editorState.workspace.registerButtonCallback("ADD_VARIABLE", () => {
-            editorState.editorModalKind = "variable"
+            editorState.openEditorModals.add("variable")
         });
 
         editorState.workspace.registerToolboxCategoryCallback("FUNCTIONS", function (_) {
@@ -374,8 +388,9 @@
 
 <div id="appContainer">
     <EditorTopBar 
-        projectSettings={projectSettings}
-        editorState={editorState}
+        {projectSettings}
+        {editorState}
+        {editorFunctions}
     />
     <div id="pageContainer">
         <div bind:this={blocklyDiv} id="blocklyDiv"></div>
