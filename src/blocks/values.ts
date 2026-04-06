@@ -182,15 +182,15 @@ BlocklyGLSL.gLSLGenerator.forBlock["values_vector4"] = function (block, generato
     const Y = block.getFieldValue("Y");
     const Z = block.getFieldValue("Z");
     const W = block.getFieldValue("W");
-    return [`vec3(float(${X}), float(${Y}), float(${Z}), float(${W}))`, BlocklyGLSL.Order.NONE];
+    return [`vec4(float(${X}), float(${Y}), float(${Z}), float(${W}))`, BlocklyGLSL.Order.NONE];
 };
 
 BlocklyGLSL.gLSLGenerator.forBlock["values_surface"] = function (block, generator) {
-    return [`makeSurface(vec3(1.0), 1.0, 0.0, 0.0)`, BlocklyGLSL.Order.NONE];
+    return [`Surface(vec3(1.0), 1.0, 0.0, 0.0)`, BlocklyGLSL.Order.NONE];
 };
 
 BlocklyGLSL.gLSLGenerator.forBlock["values_sdf"] = function (block, generator) {
-    return [`makeSDF(MAX_DIST_TO_TRAVEL, makeSurface(vec3(0.0), 1.0, 0.0, 0.0))`, BlocklyGLSL.Order.NONE]
+    return [`SDF(MAX_DIST_TO_TRAVEL, Surface(vec3(0.0), 1.0, 0.0, 0.0), 0.0)`, BlocklyGLSL.Order.NONE]
 };
 
 BlocklyGLSL.gLSLGenerator.forBlock["values_boolean"] = function (block, generator) {

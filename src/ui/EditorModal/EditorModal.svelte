@@ -6,6 +6,7 @@
         acceptText?: string;
         cancelText?: string;
         onAccept?: () => void;
+        acceptDisabled?: boolean;
         onCancel?: () => void;
         children?: Snippet;
     }
@@ -22,7 +23,7 @@
         <div class="editor-modal__bottom_row">
             <div class="editor-modal__buttons">
                 {#if props.acceptText && props.onAccept}
-                    <button onclick={props.onAccept}>{props.acceptText}</button>
+                    <button onclick={props.onAccept} disabled={props.acceptDisabled}>{props.acceptText}</button>
                 {/if}
                 {#if props.cancelText && props.onCancel}
                     <button onclick={props.onCancel}>{props.cancelText}</button>
@@ -56,11 +57,11 @@
         width: min(94vw, 720px);
         max-height: 86vh;
         box-shadow: 0 12px 30px rgba(0, 0, 0, 0.32);
-        overflow: auto;
         display: flex;
         flex-direction: column;
         gap: 1rem;
         animation: modal-pop 180ms cubic-bezier(.16,.84,.3,1);
+        overflow: hidden;
     }
 
     .editor-modal__top_row {
@@ -105,17 +106,21 @@
         background: #0b73ff;
         color: white;
     }
+    .editor-modal__buttons button:first-child:disabled {
+        background: #0b73ff77;
+        color: white;
+    }
     .editor-modal__buttons button:last-child {
         background: transparent;
         color: #374151;
         border: 1px solid rgba(15,23,42,0.08);
     }
-    .editor-modal__buttons button:hover {
-        transform: translateY(-2px);
+    /* .editor-modal__buttons button:hover {
+        border: 2px solid rgba(15,23,42,0.08);
     }
     .editor-modal__buttons button:active {
         transform: translateY(0);
-    }
+    } */
 
     @media (max-width: 480px) {
         .editor-modal__content {

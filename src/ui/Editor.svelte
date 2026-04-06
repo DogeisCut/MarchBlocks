@@ -35,6 +35,8 @@
     import EditorModal from "./EditorModal/EditorModal.svelte";
     import EditorModalVariable from "./EditorModal/EditorModalVariable/EditorModalVariable.svelte";
 
+    import { BlockTypes } from "../shared"
+
     import.meta.glob('../blocks/*.ts', { eager: true });
 
     let projectSettings: ProjectSettings = $state({
@@ -67,7 +69,7 @@
         toolboxElement.innerHTML = toolbox;
 
         editorState.workspace = Blockly.inject(blocklyDiv, {
-            toolbox: toolboxElement,
+            toolbox: { "kind": "categoryToolbox", "contents": [] },
             collapse: true,
             comments: true,
             css: true,
@@ -115,6 +117,60 @@
                 pinch: true
             },
         });
+
+
+        editorState.workspace.registerToolboxCategoryCallback("VARIABLES", function (_) {
+            const xmlList = [];
+
+            // const button = Blockly.utils.xml.createElement("button");
+            // button.setAttribute("text", "Create variable");
+            // button.setAttribute("callbackKey", "ADD_VARIABLE");
+            // xmlList.push(button);
+
+            const init = Blockly.utils.xml.createElement("block")
+            init.setAttribute("type", "variables_init");
+            xmlList.push(init);
+
+            if (Object.keys(editorState.workspace.getVariableMap().getAllVariables()).length === 0) return xmlList;
+
+            // const valueShadow = Blockly.utils.xml.createElement("value");
+            // valueShadow.setAttribute("name", "VALUE");
+            // const shadow = Blockly.utils.xml.createElement("shadow");
+            // shadow.setAttribute("type", "math_number");
+            // const field = Blockly.utils.xml.createElement("field");
+            // field.setAttribute("name", "NUM");
+            // field.textContent = "0";
+            // shadow.appendChild(field);
+            // valueShadow.appendChild(shadow);
+
+            editorState.workspace.getVariableMap().getAllVariables().forEach((variable: Blockly.VariableModel) => {
+                const get = Blockly.utils.xml.createElement("block");
+                get.setAttribute("type", "variables_get");
+                const varField = Blockly.utils.xml.createElement("field");
+                varField.setAttribute("name", "VARIABLE");
+                varField.textContent = variable.getId();
+                get.appendChild(varField);
+                xmlList.push(get);
+            })
+
+            const set = Blockly.utils.xml.createElement("block");
+            set.setAttribute("type", "variables_set");
+            xmlList.push(set);
+
+
+            return xmlList;
+        });
+        editorState.workspace.registerButtonCallback("ADD_VARIABLE", () => {
+            editorState.editorModalKind = "variable"
+        });
+
+        editorState.workspace.registerToolboxCategoryCallback("FUNCTIONS", function (_) {
+            const xmlList = [];
+
+            return xmlList;
+        });
+
+        editorState.workspace.updateToolbox(toolboxElement);
 
         const defaultWorkspaceElement = document.createElement("xml")
         defaultWorkspaceElement.innerHTML = `<block type="scene" id="scene" deletable="false" editable="false" x="0" y="0">
@@ -326,11 +382,13 @@
             {savedEditorState}
         />
     </div>
+    <!-- i spent time on this variabel modal only to realise i wont need it :/ -->
     {#if editorState.editorModalKind === "variable"}
         <EditorModalVariable
             title="Create a Variable"
             acceptText="Create"
             cancelText="Cancel"
+            {editorState}
         ></EditorModalVariable>
     {:else if editorState.editorModalKind === "editorSettings"}
         <EditorModal

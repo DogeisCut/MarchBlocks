@@ -200,10 +200,10 @@ const toolbox = `
         ${block("labeling_label")}
     </category>
 
-    <category name="Variables" colour="${c.variables_blocks.colourPrimary}" custom="VARIABLE">
+    <category name="Variables" colour="${c.variables_blocks.colourPrimary}" custom="VARIABLES">
     </category>
 
-    <category name="Functions" colour="${c.functions_blocks.colourPrimary}" custom="PROCEDURE">
+    <category name="Functions" colour="${c.functions_blocks.colourPrimary}" custom="FUNCTIONS">
     </category>
 `;
 
