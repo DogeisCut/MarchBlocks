@@ -1,6 +1,7 @@
 import * as Blockly from "blockly";
 import * as BlocklyGLSL from "../generators/glsl";
 import {FieldColourHsvSliders} from '@blockly/field-colour-hsv-sliders';
+import { hexToRgb } from '../shared'
 
 Blockly.Blocks["values_color"] = {
     init: function (this: Blockly.Block) {
@@ -131,14 +132,6 @@ Blockly.Blocks["values_position"] = {
 
 
 BlocklyGLSL.gLSLGenerator.forBlock["values_color"] = function (block, generator) {
-    function hexToRgb(hex: string) {
-        var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-        return result ? {
-            r: parseInt(result[1], 16),
-            g: parseInt(result[2], 16),
-            b: parseInt(result[3], 16)
-        } : null;
-    }
     const COLOR = block.getFieldValue("COLOR");
     const convertedColor = hexToRgb(COLOR) ?? { r: 0, g: 0, b: 0 }
     return [`vec3(float(${convertedColor.r/255}), float(${convertedColor.g/255}), float(${convertedColor.b/255}))`, BlocklyGLSL.Order.NONE];

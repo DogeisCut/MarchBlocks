@@ -1,17 +1,18 @@
 import * as Blockly from "blockly";
 import * as BlocklyGLSL from "../generators/glsl";
-import { dom } from "blockly/core/utils";
 import {FieldColourHsvSliders} from '@blockly/field-colour-hsv-sliders';
 
-import { BlockTypes, shadowMap, trueTypeMap } from "../shared"
+import { BlockTypes, shadowMap, trueTypeMap, hexToRgb } from "../shared"
 
-// TODO: fix set block value shadow in inspector
-// TODO: fix set block not updating when placed
-// TODO: fix invalid names (dont prevent them, but figure out how to convert them without conflicts!)
-// TODO: fix conflicting names
-// TODO: fix weird inspector stuff if you like drag out the block with the same name twice then delete one
+// TODO: fix set/get block not updating with init block when placed
+// TODO: fix wierd duplicate name edge case when duplicating an init block after messing with the field
 // TODO: fix init block position affecting where the var is declared.
-// TODO: deleting var init block deletes all blocks using it with a confirmation modal prompt
+// TODO: deleting a var actually deletes all uses
+// TODO: delete modal/proper deletion system
+// TODO: some sort of global validator to make sure there's no vars without inits, or
+// vars with multiple inits
+// TODO: Some sort of way to distinguish variables of different types maybe?
+// TODO MINOR: breif syntax error if you change a get between variables of different types while its connected 
 
 // Im aware of the variables field, but I dont want to use it here.
 function getVariables(workspace: Blockly.WorkspaceSvg): Blockly.MenuOption[] {
@@ -20,6 +21,13 @@ function getVariables(workspace: Blockly.WorkspaceSvg): Blockly.MenuOption[] {
         return [['', '']];
     }
     return allVars.map((variable) => [variable.getName(), variable.getId()]);
+}
+
+function validateVariableName(variableName: string) {
+    const hash = btoa(variableName).replace(/=/g, '');
+    variableName = variableName.replace(/\s+/g, '');
+    variableName = variableName.replace(/[^a-zA-Z0-9]/g, ''); // I'm aware underscores are valid, but aparently double underscores arent! 
+    return `marchBlocks_${variableName}${hash}`;
 }
 
 const typeMap = {
@@ -125,14 +133,6 @@ const fieldMap: Record<BlockTypes,
             block.removeInput("COLOR", true)
         },
         get: function (block: Blockly.BlockSvg): string {
-            function hexToRgb(hex: string) {
-                var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-                return result ? {
-                    r: parseInt(result[1], 16),
-                    g: parseInt(result[2], 16),
-                    b: parseInt(result[3], 16)
-                } : null;
-            }
             const VALUE = block.getFieldValue("VALUE");
             const convertedColor = hexToRgb(VALUE) ?? { r: 0, g: 0, b: 0 }
             return `vec3(float(${convertedColor.r/255}), float(${convertedColor.g/255}), float(${convertedColor.b/255}))`
@@ -156,17 +156,30 @@ const fieldMap: Record<BlockTypes,
             return block.getFieldValue("VALUE").toLowerCase()
         }
     },
-    [BlockTypes.Surface]: { // i'll make this better later
+    [BlockTypes.Surface]: {
         create: function (block: Blockly.BlockSvg): boolean {
             if (block.getInput("SURFACE")) return false;
-            block.appendDummyInput("SURFACE").appendField("surface")
+            // this definetly wont be annoying to keep up to date
+            // also you *should* be able to put things inside here via inputs but its impossible to tell if what you are putting in is a constant value so i dont bother
+            block.appendDummyInput("COLOR_ROW").appendField("color:").appendField(new FieldColourHsvSliders("#ff0000"), "COLOR")
+            block.appendDummyInput("ROUGHNESS_ROW").appendField("roughness:").appendField(new Blockly.FieldNumber(1, 0, 1), "ROUGHNESS")
+            block.appendDummyInput("METALLICITY_ROW").appendField("metallicity:").appendField(new Blockly.FieldNumber(0, 0, 1), "METALLICITY")
+            block.appendDummyInput("EMISSION_ROW").appendField("emission:").appendField(new Blockly.FieldNumber(0, 0, 1), "EMISSION")
             return true
         },
         destroy: function (block: Blockly.BlockSvg): void {
-            block.removeInput("SURFACE", true)
+            block.removeInput("COLOR_ROW", true)
+            block.removeInput("ROUGHNESS_ROW", true)
+            block.removeInput("METALLICITY_ROW", true)
+            block.removeInput("EMISSION_ROW", true)
         },
         get: function (block: Blockly.BlockSvg): string {
-            return `Surface(vec3(1.0), 1.0, 0.0, 0.0)`
+            const COLOR = block.getFieldValue("COLOR");
+            const convertedColor = hexToRgb(COLOR) ?? { r: 0, g: 0, b: 0 }
+            const ROUGHNESS = block.getFieldValue("ROUGHNESS");
+            const METALLICITY = block.getFieldValue("METALLICITY");
+            const EMISSION = block.getFieldValue("EMISSION");
+            return `Surface(vec3(float(${convertedColor.r/255}), float(${convertedColor.g/255}), float(${convertedColor.b/255})), float(${ROUGHNESS}), float(${METALLICITY}), float(${EMISSION}))`
         }
     },
     [BlockTypes.SDF]: {
@@ -226,7 +239,11 @@ Blockly.Blocks["variables_init"] = {
             this.updateType_(newValue as BlockTypes);
             this.updateVariableSync_(this.getFieldValue("NAME"), newValue);
             return newValue
-        }), "TYPE").appendField("variable").appendField(new Blockly.FieldTextInput("foo", (newName: string) => {
+        }), "TYPE").appendField("variable").appendField(new Blockly.FieldTextInput(Blockly.Variables.generateUniqueName(this.workspace), (newName: string) => {
+            // this.workspace.getVariableMap().getVariable(newName) did not work
+            if (this.workspace.getVariableMap().getAllVariables().find((variable) => variable.getName() == newName)) {
+                return null;
+            }
             this.updateVariableSync_(newName, this.getFieldValue("TYPE"));
             return newName;
         }), "NAME");
@@ -252,10 +269,7 @@ Blockly.Blocks["variables_init"] = {
         let variable = this.variableId_ ? variableMap.getVariableById(this.variableId_) : null;
 
         if (!variable) {
-            variable = variableMap.getVariable(name, type);
-            if (!variable) {
-                variable = variableMap.createVariable(name, type);
-            }
+            variable = variableMap.createVariable(name, type);
             this.variableId_ = variable.getId();
         } else {
             if (variable.getName() !== name || variable.getType() !== type) {
@@ -268,6 +282,12 @@ Blockly.Blocks["variables_init"] = {
 
     dispose: function (this: any) {
         if (this.variableId_ && this.workspace) {
+            const name = this.getFieldValue("NAME") || "";
+            // this isnt perfect as it doesnt use our modal components
+            // and it can activate when Blockly itself deletes the block for any reason, not just the user.
+            if (!confirm(`Delete all uses of variable "${name}"?`)) {
+                return;
+            }
             Blockly.Variables.deleteVariable(this.workspace, this.workspace.getVariableMap().getVariableById(this.variableId_));
         }
         Blockly.BlockSvg.prototype.dispose.call(this);
@@ -331,13 +351,16 @@ Blockly.Blocks["variables_init"] = {
 };
 
 Blockly.Blocks["variables_set"] = {
-    init: function (this: Blockly.BlockSvg) {
+    init: function (this: Blockly.BlockSvg & { updateShape_: () => {} }) {
         this.setInputsInline(true);
         this.appendDummyInput()
             .appendField("set")
             .appendField(new Blockly.FieldDropdown(() => getVariables(this.workspace), (newValue: string) => {
                 const variable = this.workspace.getVariableMap().getVariableById(newValue);
                 if (variable) {
+                    if (!this.getInput("VALUE")?.connection?.targetBlock().isShadow()) {
+                        this.getInput("VALUE")?.connection?.disconnect()
+                    }
                     this.getInput("VALUE")?.connection?.targetBlock()?.dispose()
                     this.getInput("VALUE")?.setCheck(trueTypeMap[variable.getType()]);
                     this.getInput("VALUE")?.connection?.setShadowState({ ...this.getInput("VALUE")?.connection?.getShadowState(), type: shadowMap[variable.getType()] })
@@ -349,15 +372,16 @@ Blockly.Blocks["variables_set"] = {
         this.setPreviousStatement(true);
         this.setNextStatement(true);
         this.setStyle("variables_blocks");
+        this.updateShape_()
     },
-    onchange() {
-        // i think we are having recursion issues
-        // const id = this.getFieldValue("VARIABLE")
-        // const variable = this.workspace.getVariableMap().getVariableById(id);
-        // if (variable) {
-        //     this.getInput("VALUE")?.setCheck(trueTypeMap[variable.getType()]);
-        //     this.getInput("VALUE")?.connection?.setShadowState({ ...this.getInput("VALUE")?.connection?.getShadowState(), type: shadowMap[variable.getType()] })
-        // }
+    updateShape_() {
+        const id = this.getFieldValue("VARIABLE");
+        const variable = this.workspace.getVariableMap().getVariableById(id);
+        if (variable) {
+            this.getInput("VALUE")?.setCheck(trueTypeMap[variable.getType()]);
+            const currentShadow = this.getInput("VALUE")?.connection?.getShadowState() ?? {};
+            this.getInput("VALUE")?.connection?.setShadowState({ ...currentShadow, type: shadowMap[variable.getType()] });
+        }
     }
 };
 
@@ -374,19 +398,25 @@ Blockly.Blocks["variables_set"] = {
 // };
 
 Blockly.Blocks["variables_get"] = {
-    init: function (this: Blockly.BlockSvg) {
+    init: function (this: Blockly.BlockSvg & { updateShape_: () => {} }) {
         this.appendDummyInput()
-            .appendField(new Blockly.FieldDropdown(() => getVariables(this.workspace)), "VARIABLE");
+            .appendField(new Blockly.FieldDropdown(() => getVariables(this.workspace), (newValue: string) => {
+                this.updateShape_()
+                return newValue
+            }), "VARIABLE");
         this.setOutput(true);
         this.setStyle("variables_blocks");
+        this.updateShape_()
     },
-    onchange: function (this: Blockly.BlockSvg) {
-        if (!this.workspace || this.workspace.isFlyout) return;
+    updateShape_() {
         const id = this.getFieldValue("VARIABLE");
         const variable = this.workspace.getVariableMap().getVariableById(id);
         if (variable) {
             this.setOutput(true, trueTypeMap[variable.getType()]);
         }
+    },
+    onchange: function (this: Blockly.BlockSvg & { updateShape_: () => {} }) {
+        this.updateShape_()
     }
 };
 
@@ -397,18 +427,18 @@ BlocklyGLSL.gLSLGenerator.forBlock["variables_init"] = function (block: Varibale
     const NAME = block.getFieldValue("NAME");
     if (block.defaultValue_) {
         const VALUE = fieldMap[TYPE].get(block);
-        return `${typeMap[TYPE]} marchBlocks_${NAME} = ${VALUE};\n`;
+        return `${typeMap[TYPE]} ${validateVariableName(NAME)} = ${VALUE};\n`;
     }
-    return `${typeMap[TYPE]} marchBlocks_${NAME};\n`;
+    return `${typeMap[TYPE]} ${validateVariableName(NAME)};\n`;
 };
 
 BlocklyGLSL.gLSLGenerator.forBlock["variables_get"] = function (block: Blockly.BlockSvg, generator) {
     const VARIABLE = block.getFieldValue("VARIABLE");
-    return [`marchBlocks_${block.workspace.getVariableMap().getVariableById(VARIABLE).getName()}`, BlocklyGLSL.Order.NONE];
+    return [`${validateVariableName(block.workspace.getVariableMap().getVariableById(VARIABLE).getName())}`, BlocklyGLSL.Order.NONE];
 };
 
 BlocklyGLSL.gLSLGenerator.forBlock["variables_set"] = function (block: Blockly.BlockSvg, generator) {
     const VARIABLE = block.getFieldValue("VARIABLE");
     const VALUE = generator.valueToCode(block, "VALUE", BlocklyGLSL.Order.ATOMIC)
-    return `marchBlocks_${block.workspace.getVariableMap().getVariableById(VARIABLE).getName()} = ${VALUE};`
+    return `${validateVariableName(block.workspace.getVariableMap().getVariableById(VARIABLE).getName())} = ${VALUE};`
 };

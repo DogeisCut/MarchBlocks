@@ -34,6 +34,11 @@ Blockly.Blocks["surfaces_create_surface"] = {
     },
 };
 
+// surfaces_set_color
+// surfaces_set_roughness
+// surfaces_set_metallicity
+// surfaces_set_emission
+
 
 
 BlocklyGLSL.gLSLGenerator.forBlock["surfaces_generic_surface"] = function (block, generator) {

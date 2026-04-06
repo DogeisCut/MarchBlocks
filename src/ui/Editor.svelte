@@ -360,6 +360,9 @@
 
         editorState.workspace.addChangeListener(listener);
 
+        (window as any).Workspace = editorState.workspace;
+        (window as any).Blockly = Blockly;
+
         onDestroy(() => {
             editorState.workspace?.removeChangeListener(listener);
             editorState.workspace?.removeChangeListener(Blockly.Events.disableOrphans);
