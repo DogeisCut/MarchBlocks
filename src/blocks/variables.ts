@@ -11,6 +11,7 @@ import { BlockTypes, shadowMap, trueTypeMap } from "../shared"
 // TODO: fix conflicting names
 // TODO: fix weird inspector stuff if you like drag out the block with the same name twice then delete one
 // TODO: fix init block position affecting where the var is declared.
+// TODO: deleting var init block deletes all blocks using it with a confirmation modal prompt
 
 // Im aware of the variables field, but I dont want to use it here.
 function getVariables(workspace: Blockly.WorkspaceSvg): Blockly.MenuOption[] {
