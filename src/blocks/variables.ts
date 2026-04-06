@@ -331,13 +331,13 @@ Blockly.Blocks["variables_set"] = {
                 const variable = this.workspace.getVariableMap().getVariableById(newValue);
                 if (variable) {
                     this.getInput("VALUE")?.connection?.targetBlock()?.dispose()
-                    this.getInput("VALUE")?.setCheck(variable.getType());
+                    this.getInput("VALUE")?.setCheck(trueTypeMap[variable.getType()]);
                     this.getInput("VALUE")?.connection?.setShadowState({ ...this.getInput("VALUE")?.connection?.getShadowState(), type: shadowMap[variable.getType()] })
                 }
                 return newValue
             }), "VARIABLE")
             .appendField("to");
-        this.appendValueInput("VALUE").setCheck(null);
+        this.appendValueInput("VALUE").setCheck([]);
         this.setPreviousStatement(true);
         this.setNextStatement(true);
         this.setStyle("variables_blocks");
@@ -377,7 +377,7 @@ Blockly.Blocks["variables_get"] = {
         const id = this.getFieldValue("VARIABLE");
         const variable = this.workspace.getVariableMap().getVariableById(id);
         if (variable) {
-            this.setOutput(true, variable.getType());
+            this.setOutput(true, trueTypeMap[variable.getType()]);
         }
     }
 };
@@ -394,13 +394,13 @@ BlocklyGLSL.gLSLGenerator.forBlock["variables_init"] = function (block: Varibale
     return `${typeMap[TYPE]} ${NAME};\n`;
 };
 
-BlocklyGLSL.gLSLGenerator.forBlock["variables_get"] = function (block: VaribalesInitBlockSvg, generator) {
+BlocklyGLSL.gLSLGenerator.forBlock["variables_get"] = function (block: Blockly.BlockSvg, generator) {
     const VARIABLE = block.getFieldValue("VARIABLE");
-    return [`${VARIABLE}`, BlocklyGLSL.Order.NONE];
+    return [`${block.workspace.getVariableMap().getVariableById(VARIABLE).getName()}`, BlocklyGLSL.Order.NONE];
 };
 
-BlocklyGLSL.gLSLGenerator.forBlock["variables_set"] = function (block: VaribalesInitBlockSvg, generator) {
+BlocklyGLSL.gLSLGenerator.forBlock["variables_set"] = function (block: Blockly.BlockSvg, generator) {
     const VARIABLE = block.getFieldValue("VARIABLE");
     const VALUE = generator.valueToCode(block, "VALUE", BlocklyGLSL.Order.ATOMIC)
-    return `${VARIABLE} = VALUE;`
+    return `${block.workspace.getVariableMap().getVariableById(VARIABLE).getName()} = ${VALUE};`
 };
